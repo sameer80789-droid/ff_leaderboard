@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live FF Leaderboard</title>
+    <style>
+        body { background-color: #0f172a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h1 { text-align: center; color: #fbbf24; }
+        .status { text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #0f172a; color: #94a3b8; text-transform: uppercase; font-size: 12px; }
+        tr:hover { background: #334155; }
+        .top-1 { color: #fbbf24; font-weight: bold; }
+        .top-2 { color: #cbd5e1; font-weight: bold; }
+        .top-3 { color: #b45309; font-weight: bold; }
+        .name { font-weight: 500; }
+        .uid { color: #64748b; font-family: monospace; font-size: 13px; }
+        .loading { text-align: center; font-size: 18px; color: #38bdf8; margin-top: 20px;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 Live PK BR Leaderboard</h1>
+        <div class="status" id="status">Fetching live data from Garena...</div>
+        
+        <table id="lb-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Player Name</th>
+                    <th>UID</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody id="lb-body"></tbody>
+        </table>
+        <div id="loading" class="loading">Loading...</div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                const res = await fetch('/api/leaderboard');
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('status').innerText = `Last Updated: ${data.updated_at} (Auto-refreshes every 5 mins)`;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('lb-table').style.display = 'table';
+                    
+                    const tbody = document.getElementById('lb-body');
+                    tbody.innerHTML = '';
+                    
+                    data.players.forEach(p => {
+                        const tr = document.createElement('tr');
+                        let rankClass = p.rank === 1 ? 'top-1' : p.rank === 2 ? 'top-2' : p.rank === 3 ? 'top-3' : '';
+                        
+                        tr.innerHTML = `
+                            <td class="${rankClass}">#${p.rank}</td>
+                            <td class="name">${p.name}</td>
+                            <td class="uid">${p.uid}</td>
+                            <td>${p.points}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    document.getElementById('status').innerText = "Waiting for first background update...";
+                }
+            } catch (e) {
+                document.getElementById('loading').innerText = "Failed to connect to API.";
+            }
+        }
+        
+        // Load immediately, then refresh UI every 60 seconds to check for new data
+        loadData();
+        setInterval(loadData, 60000);
+    </script>
+</body>
+</html>
